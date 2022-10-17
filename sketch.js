@@ -1,72 +1,58 @@
-const Engine = Matter.Engine;
-const World = Matter.World;
-const Bodies = Matter.Bodies;
-const Constraint = Matter.Constraint;
+var hypnoticBall, database;
+var position;
 
-var engine, world;
-var canvas;
-var palyer, playerBase, playerArcher;
-var arrow;
-var baseimage;
-var playerimage;
 
-function preload() {
-  backgroundImg = loadImage("./assets/background.png");
-  baseimage = loadImage("./assets/base.png");
-  playerimage = loadImage("./assets/player.png");
+function setup(){
+  database = firebase.database();
+  console.log(database);
+  createCanvas(500,500);
+
+  hypnoticBall = createSprite(250,250,10,10);
+  hypnoticBall.shapeColor = "red";
+
+
+  var hypnoticBallPosition = database.ref('ball/position');
+  hypnoticBallPosition.on("value", readPosition, showError);
 }
 
-function setup() {
-  canvas = createCanvas(windowWidth, windowHeight);
+function draw(){
+  background("white");
 
-  engine = Engine.create();
-  world = engine.world;
+  if(position!==undefined){
 
-  angleMode(DEGREES);
-
-  var options = {
-    isStatic: true
-  };
-
-  playerBase = Bodies.rectangle(200, 350, 180, 150, options);
-  World.add(world, playerBase);
-
-  player = Bodies.rectangle(250, playerBase.position.y - 160, 50, 180, options);
-  World.add(world,player)
-
-  playerArcher = new PlayerArcher(
-    340,
-    playerBase.position.y - 112,
-    120,
-    120
-  );
-
-  arrow = new PlayerArrow(
-    playerArcher.body.position.x,
-    playerArcher.body.position.y,
-    100,
-    10
-  );
+    if(keyDown(LEFT_ARROW)){
+      writePosition(-1,0);
+    }
+    else if(keyDown(RIGHT_ARROW)){
+      writePosition(1,0);
+    }
+    else if(keyDown(UP_ARROW)){
+      writePosition(0,-1);
+    }
+    else if(keyDown(DOWN_ARROW)){
+      writePosition(0,+1);
+    }
+    drawSprites();
+}
 }
 
-function draw() {
-  background(backgroundImg);
-  image(baseimage,playerBase.position.x,playerBase.position.y,180,150)
-  image(playerimage,player.position.x,player.position.y,50,180)
-  Engine.update(engine);
+function writePosition(x,y){
+  database.ref('ball/position').set(
+    {
+      'x':position.x+x,
+      'y':position.y+y
+    }
+  )
 
-  playerArcher.display();
-  arrow.display();
+}
 
-  if (keyCode === 32) {
-    
-     arrow.shoot(playerArcher.body.angle);
-    
-  }
+function readPosition(data){
+  position = data.val();
+  console.log(position.x);
+  hypnoticBall.x = position.x;
+  hypnoticBall.y = position.y;
+}
 
-  // Title
-  fill("#FFFF");
-  textAlign("center");
-  textSize(40);
-  text("EPIC ARCHERY", width / 2, 100);
+function showError(){
+  console.log("Error in writing to the database");
 }
